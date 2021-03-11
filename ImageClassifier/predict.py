@@ -70,6 +70,7 @@ def predict(img, model, topk,device):
     return np.array(top_probs), np.array(top_classes)
 
 def main():
+    #Define our arguments
     parser = argparse.ArgumentParser(description="Train.py")
     parser.add_argument(dest = "image_path")
     parser.add_argument(dest = "checkpoint")
@@ -78,11 +79,16 @@ def main():
     parser.add_argument('--gpu', dest="gpu", action="store_true", default=False)
     args = parser.parse_args()
     
+    #Set device to GPU if supplied in args
     device = torch.device("cuda" if args.gpu else "cpu")
+    #Load the category names file from args
     with open(args.category_names, 'r') as f:
         cat_to_name = json.load(f)
+    #Define our model from the checkpoint
     model = load_checkpoint(args.checkpoint)
+    #Process the image provided in image path
     image = process_image(args.image_path)
+    #Use predict function on processed image to get top k predictions
     probs, classes =  predict(image,model,args.top_k,device)
     # Map flower index to name
     flower_species = [cat_to_name[species] for species in classes] 

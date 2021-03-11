@@ -11,6 +11,7 @@ import numpy as np
 import argparse
 
 def train_loader(train_dir):
+    #Transform training data
     tn_transform = transforms.Compose([
                                     transforms.RandomRotation(30),
                                     transforms.RandomResizedCrop(224),
@@ -20,10 +21,12 @@ def train_loader(train_dir):
                                       [0.229, 0.224, 0.225])])                
     tn_dataset = datasets.ImageFolder(train_dir , transform=tn_transform)
     loader = torch.utils.data.DataLoader(tn_dataset, batch_size=64, shuffle = "true")
+    #Return training dataloader and dataset
     return loader, tn_dataset  
 
                                                                                                                  
 def test_loader(test_dir):
+    #Transfrom test data
     ts_transform = transforms.Compose([
                                     transforms.Resize(255),
                                     transforms.CenterCrop(224),
@@ -32,6 +35,7 @@ def test_loader(test_dir):
                                       [0.229, 0.224, 0.225])])
     ts_dataset = datasets.ImageFolder(test_dir , transform=ts_transform) 
     loader = torch.utils.data.DataLoader(ts_dataset, batch_size=50)
+    #Return testing loader
     return loader
                                  
 def model_architechture(arch):
@@ -42,6 +46,7 @@ def model_architechture(arch):
     return model
 
 def set_classifier(hidden_units):
+    #Define our classifier, hidden units must be a list of length three
     classifier = nn.Sequential(OrderedDict([
                         ('fc1', nn.Linear(25088, hidden_units[0])),
                         ('relu', nn.ReLU()),
@@ -55,9 +60,8 @@ def set_classifier(hidden_units):
                           ]))
     return classifier
 
-# Use GPU if available
-
 def model_train(model, classifier, learning_rate, epochs, trainloader, validloader, device):
+    #Set up model using params supplied in script args
     model.classifier = classifier
     criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
@@ -128,7 +132,7 @@ def checkpoint_save(save_dir,epochs,model,optimizer, train_dataset):
     torch.save(checkpoint, 'checkpoint_SB.pth')
         
 def main():
-    
+    #Define our arguments here, data_dir is compulsary, others are optional 
     parser = argparse.ArgumentParser(description="Train.py")
     parser.add_argument(dest = "data_dir")
     parser.add_argument('--arch', dest="arch", action="store", default="vgg16", type = str)
@@ -143,16 +147,22 @@ def main():
     valid_dir = args.data_dir + '/valid'
     test_dir = args.data_dir + '/test'
     
+    #Load our data in
     trainloader, train_dataset = train_loader(train_dir)
     validloader = test_loader(valid_dir)
 
+    #Define our model using specificed architechture
     model = model_architechture(arch=args.arch)
     
+    #Define classifier with specified hidden units
     classifier = set_classifier(args.hidden_units) 
     
+    #Set device to GPU if supplied in args
     device = torch.device("cuda" if args.gpu else "cpu")
+    #Get our model and optimizer via training
     train_model, train_optimizer = model_train(model, classifier, args.learning_rate, args.epochs, trainloader, validloader, device)
 
+    #Save down the result
     checkpoint_save(args.dir,args.epochs,train_model,train_optimizer, train_dataset)
     
     
